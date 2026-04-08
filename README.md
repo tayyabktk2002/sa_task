@@ -2,7 +2,17 @@
 
 This is a full-stack Ticket Management System built with a robust backend using Node.js & PostgreSQL (Neon) and a dynamic, responsive frontend using Next.js.
 
-## Tech Stack
+## Submission Deliverables & Links
+- **Full Git Repository**: Fully committed and pushed.
+- **Database Schema and Migrations**: Handled exclusively on startup via `Sequelize.sync({ alter: true })`. Schemas are strictly defined in `backend/models/*.js`.
+- **Seed Script for 10k tickets**: Available locally via UI trigger (Click "Seed Tickets" on the Tickets table if logged in as Admin/Owner) or by executing `node backend/seed/seedTicket.js`.
+- **README with Setup Instructions**: Detailed in the "Setup & Testing Guide" section at the bottom of this file.
+- **Engineering Notes Document**: Detailed in the "Engineering Notes & Architecture" sections below.
+
+---
+
+## Engineering Notes & Architecture
+
 
 ### Backend
 - **Node.js & Express**: Core backend framework for API routing.
