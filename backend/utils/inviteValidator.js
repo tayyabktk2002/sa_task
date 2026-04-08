@@ -14,6 +14,9 @@ const validateInvitation = async (email, invite_token) => {
         throw new Error("Invalid invitation token");
     }
     const { org_id, role, email: inviteEmail } = decoded;
+    console.log("token decode :", org_id, role, inviteEmail);
+
+
 
 
     if (email !== inviteEmail) {
@@ -26,11 +29,9 @@ const validateInvitation = async (email, invite_token) => {
     }
 
     const findUser = await User.findOne({ where: { email } });
-    if (findUser) {
-        throw new Error("User already exists, please login");
-    }
-
-    const findInvite = await InviteUser.findOne({ where: { email, org_id, status: "accepted" } });
+    // If user exists, we don't throw error here anymore, we'll handle it in acceptInvite
+    
+    const findInvite = await InviteUser.findOne({ where: { email, org_id, status: "approved" } });
     if (findInvite) {
         throw new Error("Invitation already accepted");
     }

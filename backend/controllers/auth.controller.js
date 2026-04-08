@@ -7,7 +7,6 @@ const bcrypt = require("bcryptjs");
 const { auditLogEvent } = require("../utils/auditLog");
 const { successResponse, errorResponse } = require("../utils/response");
 const { generateToken } = require("../utils/tokenGenerate");
-const InviteUser = require("../models/invite-user");
 const validateInvitation = require("../utils/inviteValidator");
 const login = async (req, res) => {
   const t = await sequelize.transaction();
@@ -36,7 +35,7 @@ const login = async (req, res) => {
       finalRole = membership.role;
     }
 
-    const token = generateToken(user, finalRole, org_id);
+    const token = generateToken(user, finalRole, org_id, "1h");
     await user.update({ token }, { transaction: t });
 
     auditLogEvent(user.id, org_id, "USER_LOGGED_IN", "User logged in successfully!", {
@@ -88,13 +87,13 @@ const register = async (req, res) => {
       { transaction: t },
     );
 
-    const token = generateToken(user, member.role, org.id);
+    const token = generateToken(user, member.role, org.id, "1d");
     await user.update({ token }, { transaction: t });
     auditLogEvent(user.id, org.id, "ORG_CREATED", "Organization created successfully!", {
       org_name: org.name,
       user_name: user.name,
       user_email: user.email,
-    });
+    }, t);
     await t.commit();
 
     res.cookie('token', token, {
@@ -118,31 +117,89 @@ const acceptInvite = async (req, res) => {
 
     const { org_id, role } = await validateInvitation(email, invite_token);
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create(
-      { name, email, password: hashedPassword },
-      { transaction: t }
-    );
+    const org = await Organization.findByPk(org_id, { transaction: t });
+    if (!org) {
+      throw new Error("Organization not found");
+    }
 
-    await Membership.create(
-      {
-        user_id: user.id,
-        org_id: org_id,
-        role: role || 'Member',
-      },
-      { transaction: t }
-    );
+    let user = await User.findOne({ where: { email }, transaction: t });
+    let authToken;
+    let finalRole;
 
-    auditLogEvent(user.id, org_id, "USER_JOINED", `${user.name} joined ${org.name} organization in ${role} role successfully!`, {
-      user_name: user.name,
-      user_email: user.email,
-      org_name: org.name,
-    });
+    if (user) {
+      // User already exists, just create membership
+      const existingMembership = await Membership.findOne({
+        where: { user_id: user.id, org_id: org_id },
+        transaction: t
+      });
+
+      if (existingMembership) {
+        throw new Error("You are already a member of this organization");
+      }
+
+      const membership = await Membership.create(
+        {
+          user_id: user.id,
+          org_id: org_id,
+          role: role || 'Member',
+        },
+        { transaction: t }
+      );
+
+      finalRole = membership.role;
+      authToken = generateToken(user, finalRole, org.id, "1d");
+      await user.update({ token: authToken }, { transaction: t });
+
+      auditLogEvent(user.id, org_id, "USER_JOINED", `${user.name} joined ${org.name} organization in ${role || 'Member'} role successfully!`, {
+        user_name: user.name,
+        user_email: user.email,
+        org_name: org.name,
+      }, t);
+    } else {
+      // New user, create user and membership
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user = await User.create(
+        { name, email, username: email, password: hashedPassword },
+        { transaction: t }
+      );
+
+      const membership = await Membership.create(
+        {
+          user_id: user.id,
+          org_id: org_id,
+          role: role || 'Member',
+        },
+        { transaction: t }
+      );
+
+      finalRole = membership.role;
+      authToken = generateToken(user, finalRole, org.id, "1d");
+      await user.update({ token: authToken }, { transaction: t });
+
+      auditLogEvent(user.id, org_id, "USER_JOINED", `${user.name} joined ${org.name} organization in ${role || 'Member'} role successfully!`, {
+        user_name: user.name,
+        user_email: user.email,
+        org_name: org.name,
+      }, t);
+    }
 
     await t.commit();
-    return successResponse(res, "Joined Organization successfully!", { token }, 201);
+
+    res.cookie('token', authToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 60 * 60 * 1000,
+    });
+
+    return successResponse(res, "Joined Organization successfully!", { name: user.name, role: finalRole, org_id: org.id, org_name: org.name }, 201);
   } catch (error) {
-    await t.rollback();
+    console.log(error);
+
+    // Only rollback if transaction is still active
+    if (t && !t.finished) {
+        await t.rollback();
+    }
     return errorResponse(res, error.message, 500);
   }
 };
@@ -162,9 +219,11 @@ const logout = async (req, res) => {
   }
 }
 
+
+
 module.exports = {
   login,
   register,
   acceptInvite,
-  logout
+  logout,
 };

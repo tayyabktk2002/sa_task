@@ -21,12 +21,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setLoader(true);
     try {
-      const { data } = await api.post('/auth/register', formData);
-      const { name, role, org_id, org_name } = data.data;
-      localStorage.setItem('userName', name);
-      localStorage.setItem('userRole', role);
-      localStorage.setItem('activeOrgId', org_id);
-      localStorage.setItem('orgName', org_name);
+      await api.post('/auth/register', formData);
       router.push('/');
       toast.success("Organization registered successfully.");
     } catch (err: any) {

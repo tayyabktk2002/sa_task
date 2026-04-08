@@ -12,6 +12,7 @@ const Ticket = sequelize.define('tickets', {
   title: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true,
     validate: { notEmpty: true }
   },
   description: {
@@ -60,21 +61,15 @@ const Ticket = sequelize.define('tickets', {
   freezeTableName: true,
   tableName: 'tickets',
   timestamps: true,
-   // using this 'createdAt' aur 'updatedAt' will create automatically and manage them
   indexes: [
-      // for fast filtering in data
     {
-      name: 'idx_tickets_org_id',
-      fields: ['org_id'] 
+      fields: ['org_id']
     },
     {
-      name: 'idx_tickets_status',
       fields: ['status']
     },
     {
-      name: 'idx_tickets_created_at',
-      fields: ['createdAt'] 
-      // Latest tickets pehle dikhane ke liye
+      fields: ['createdAt']
     }
   ]
 });
@@ -82,11 +77,9 @@ const Ticket = sequelize.define('tickets', {
 Organization.hasMany(Ticket, { foreignKey: 'org_id', as: 'tickets' });
 Ticket.belongsTo(Organization, { foreignKey: 'org_id', as: 'organization' });
 
-// 2. User creates many Tickets
 User.hasMany(Ticket, { foreignKey: 'created_by', as: 'createdTickets' });
 Ticket.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
-// 3. User can be assigned to many Tickets
 User.hasMany(Ticket, { foreignKey: 'assigned_to', as: 'assignedTickets' });
 Ticket.belongsTo(User, { foreignKey: 'assigned_to', as: 'assignee' });
 

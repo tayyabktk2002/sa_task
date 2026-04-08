@@ -18,11 +18,6 @@ export default function LoginPage() {
     setLoader(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
-      const { name, role, org_id, org_name } = data.data;
-      localStorage.setItem('userName', name);
-      localStorage.setItem('userRole', role);
-      localStorage.setItem('orgName', org_name);
-      if (org_id) localStorage.setItem('activeOrgId', org_id);
       router.push('/');
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Login failed");

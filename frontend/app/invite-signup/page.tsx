@@ -2,8 +2,8 @@
 import api from '@/lib/api';
 import { EyeClosed, EyeOffIcon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
 
@@ -22,21 +22,36 @@ export default function SignupPage() {
         password: '',
     });
 
+    useEffect(() => {
+        if (invite_token) {
+            try {
+                const decodedToken = JSON.parse(atob(invite_token.split('.')[1])); // Basic decoding for email
+                setFormData(prev => ({ ...prev, email: decodedToken.email }));
+            } catch (error) {
+                toast.error('Invalid invitation token.');
+                router.push('/login'); // Redirect to login if token is invalid
+            }
+        }
+    }, [invite_token, router]);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoader(true);
         try {
-            const { data } = await api.post('/auth/register', { ...formData, invite_token: searchParams.get('invite_token') });
-            const { name, role, org_id, org_name } = data.data;
-            localStorage.setItem('userName', name);
-            localStorage.setItem('userRole', role);
-            localStorage.setItem('activeOrgId', org_id);
-            localStorage.setItem('orgName', org_name);
+            let response;
+            if (invite_token) {
+                response = await api.post('/auth/acceptInvite', { ...formData, invite_token });
+            } else {
+                // Original registration logic if no invite token
+                response = await api.post('/auth/register', { ...formData });
+            }
+            
+            const { name, role, org_id, org_name } = response.data.data;
+            
             router.push('/');
-            toast.success("Registered successfully.");
+            toast.success("Joined successfully.");
         } catch (err: any) {
-            toast.error(err.response?.data?.message || "Registration failed");
+            toast.error(err.response?.data?.message || "Operation failed");
         } finally {
             setLoader(false);
         }
@@ -61,6 +76,8 @@ export default function SignupPage() {
                         placeholder="Email"
                         className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-white"
                         onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        value={formData.email}
+                        readOnly={!!invite_token}
                     />
                     <div className="relative">
                         <input

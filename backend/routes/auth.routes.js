@@ -1,23 +1,17 @@
 const express = require('express');
 const { login, register, acceptInvite, logout } = require('../controllers/auth.controller');
+const { authLimiter } = require('../middleware/rateLimit');
 const router = express.Router();
 
 
-router.post('/login', (req, res) => {
-  return login(req, res);
-});
+router.post('/login', authLimiter, login);
 
-router.post('/register', (req, res) => {
-  return register(req, res);
-});
+router.post('/register', authLimiter, register);
 
-router.post('/accept-invite', (req, res) => {
-  return acceptInvite(req, res);
-});
+router.post('/acceptinvite', authLimiter, acceptInvite);
 
-router.post('/logout', (req, res) => {
-  return logout(req, res);
-});
+router.post('/logout', logout);
+
 
 module.exports = router;
 

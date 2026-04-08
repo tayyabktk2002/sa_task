@@ -13,17 +13,19 @@ interface ClientLayoutProps {
 export default function ClientLayout({ children }: ClientLayoutProps) {
 
   const pathname = usePathname();
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/invite-signup';
 
 
   return (
-    <body className="min-h-full flex"
+    <body className="h-screen flex overflow-hidden"
       cz-shortcut-listen="true"
     >
       {!isAuthPage && <SideBar />}
-      <main className={`flex-1 ${isAuthPage ? '' : 'bg-gray-50'}`}>
+      <main className={`flex-1 flex flex-col overflow-hidden ${isAuthPage ? '' : 'bg-gray-50'}`}>
         {!isAuthPage && <AppBar />}
-        {children}
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
         <ToastContainer autoClose={2000}
           position="top-right"
           hideProgressBar={true}
