@@ -4,7 +4,8 @@ import api from '@/lib/api';
 import { Ticket, User } from '@/types';
 import { X } from 'lucide-react';
 import { useOrganizations } from '@/hooks/useOrganizations';
-import { useMembers } from '@/hooks/useMember'; 
+import { useMembers } from '@/hooks/useMember';
+import { toast } from 'react-toastify';
 
 interface TicketDetailsProps {
     ticketId: number;
@@ -36,7 +37,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({ ticketId, onClose }) => {
         const fetchTicket = async () => {
             try {
                 setLoading(true);
-                setError(null); 
+                setError(null);
 
                 const response = await api.get(`/tickets/get/${ticketId}`);
                 const fetchedTicket: Ticket = response.data.data.ticket;
@@ -76,7 +77,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({ ticketId, onClose }) => {
             setError('Failed to update ticket.');
             console.error(err);
         }
- finally {
+        finally {
             setLoading(false);
         }
     };
@@ -120,7 +121,9 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({ ticketId, onClose }) => {
             });
             setNewCommentContent('');
             setSelectedFile(null);
-        } catch (err) {
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || "Failed to add comment or upload file";
+            toast.error(errorMessage);
             console.error('Failed to add comment or upload file:', err);
         } finally {
             setUploading(false);
@@ -284,34 +287,35 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({ ticketId, onClose }) => {
                                 return (
                                     <div key={comment.id} className="bg-[#1e293b] p-4 rounded-lg border border-slate-700">
                                         <p className="text-sm text-white">{comment.content}</p>
-                                    {comment.attachments && comment.attachments.length > 0 && (
-                                        <div className="mt-2 space-y-2">
-                                            {comment.attachments.map((att, idx) => (
-                                                <div key={idx}>
-                                                    {att.file_type?.startsWith('image/') ? (
-                                                        <div className="relative group max-w-sm">
-                                                            <img 
-                                                                src={att.file_url} 
-                                                                alt={att.file_name} 
-                                                                className="rounded-lg border border-slate-700 max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                                                onClick={() => window.open(att.file_url, '_blank')}
-                                                            />
-                                                            <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                {att.file_name}
+                                        {comment.attachments && comment.attachments.length > 0 && (
+                                            <div className="mt-2 space-y-2">
+                                                {comment.attachments.map((att, idx) => (
+                                                    <div key={idx}>
+                                                        {att.file_type?.startsWith('image/') ? (
+                                                            <div className="relative group max-w-sm">
+                                                                <img
+                                                                    src={att.file_url}
+                                                                    alt={att.file_name}
+                                                                    className="rounded-lg border border-slate-700 max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                                                    onClick={() => window.open(att.file_url, '_blank')}
+                                                                />
+                                                                <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    {att.file_name}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ) : (
-                                                        <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-xs flex items-center">
-                                                            <span className="mr-1">📁</span> {att.file_name}
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                    <p className="text-xs text-slate-500 mt-2">By {comment.user_name} on {new Date(comment.createdAt).toLocaleString()}</p>
-                                </div>
-                            )})
+                                                        ) : (
+                                                            <a href={att.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-xs flex items-center">
+                                                                <span className="mr-1">📁</span> {att.file_name}
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-slate-500 mt-2">By {comment.user_name} on {new Date(comment.createdAt).toLocaleString()}</p>
+                                    </div>
+                                )
+                            })
                         ) : (
                             <div className="bg-[#1e293b] p-4 rounded-lg text-slate-400 border border-slate-700">
                                 No comments yet.

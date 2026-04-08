@@ -127,7 +127,6 @@ const acceptInvite = async (req, res) => {
     let finalRole;
 
     if (user) {
-      // User already exists, just create membership
       const existingMembership = await Membership.findOne({
         where: { user_id: user.id, org_id: org_id },
         transaction: t
@@ -156,7 +155,6 @@ const acceptInvite = async (req, res) => {
         org_name: org.name,
       }, t);
     } else {
-      // New user, create user and membership
       const hashedPassword = await bcrypt.hash(password, 10);
       user = await User.create(
         { name, email, username: email, password: hashedPassword },
@@ -196,7 +194,6 @@ const acceptInvite = async (req, res) => {
   } catch (error) {
     console.log(error);
 
-    // Only rollback if transaction is still active
     if (t && !t.finished) {
         await t.rollback();
     }

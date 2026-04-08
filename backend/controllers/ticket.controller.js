@@ -9,6 +9,9 @@ const cloudinary = require('../utils/cloudinary');
 const { Op } = require('sequelize');
 const Comment = require('../models/comment');
 const { seedTicketsForOrg } = require('../seed/seedTicket');
+const { isFileSignatureValid } = require("../utils/fileCheck");
+
+
 
 const createTicket = async (req, res) => {
   const t = await sequelize.transaction();
@@ -55,6 +58,13 @@ const addComment = async (req, res) => {
 
     if (!content && !file) {
       return errorResponse(res, "Comment must have either text content or an attachment, or both.", 400);
+    }
+
+    if (file) {
+      const size = Number(file.size || file.buffer?.length || 0);
+      if (size <= 0) return errorResponse(res, "Invalid file upload", 400);
+      if (size > 5 * 1024 * 1024) return errorResponse(res, "File too large (max 5MB)", 400);
+      if (!isFileSignatureValid(file)) return errorResponse(res, "Invalid or unsafe file type", 400);
     }
 
     const ticket = await Ticket.findOne({ where: { id: ticketId, org_id: req.orgId } });
@@ -313,7 +323,6 @@ const getTicketById = async (req, res) => {
         attachments: comment.attachments
       })),
     };
-    console.log('TicketData being sent:', ticketData);
 
     await t.commit();
     return successResponse(res, "Ticket fetched successfully!", { ticket: ticketData }, 200);
