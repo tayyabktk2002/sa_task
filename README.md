@@ -5,7 +5,7 @@ This is a full-stack Ticket Management System built with a robust backend using 
 ## Submission Deliverables & Links
 - **Full Git Repository**: Fully committed and pushed.
 - **Database Schema and Migrations**: Handled exclusively on startup via `Sequelize.sync({ alter: true })`. Schemas are strictly defined in `backend/models/*.js`.
-- **Seed Script for 10k tickets**: Available locally via UI trigger (Click "Seed Tickets" on the Tickets table if logged in as Admin/Owner) or by executing `node backend/seed/seedTicket.js`.
+- **Seed Script for 10k tickets**: For ease of testing, I deliberately integrated a **"Seed Tickets"** button directly on the primary Tickets UI page. This button automatically appears *only* for users natively signed in as an **Owner** (or Admin), removing the friction of relying on CLI scripts—though a direct fallback CLI script is also provided (`node backend/seed/seedTicket.js`).
 - **README with Setup Instructions**: Detailed in the "Setup & Testing Guide" section at the bottom of this file.
 - **Engineering Notes Document**: Detailed in the "Engineering Notes & Architecture" sections below.
 
